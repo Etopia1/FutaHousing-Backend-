@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  AGENT
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum DocumentType {
+  STUDENT_ID
+  NIN
+  SELFIE
+  HOSTEL_IMAGE
+}
+
+model User {
+  id                String       @id @default(uuid())
+  name              String
+  email             String       @unique
+  phone             String       @unique
+  role              Role         @default(STUDENT)
+  password          String
+  matricNumber      String?
+  nin               String?
+  verificationStatus VerificationStatus @default(PENDING)
+  wallet            Wallet?
+  bookings          Booking[]
+  hostels           Hostel[]     @relation("AgentHostels")
+  documents         VerificationDocument[]
+  otps              OTP[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+model Wallet {
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String   @unique
+  balance         Float    @default(0.0)
+  escrowBalance   Float    @default(0.0)
+  transactions    Transaction[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Hostel {
+  id          String   @id @default(uuid())
+  title       String
+  location    String
+  description String
+  price       Float
+  images      String[]
+  agent       User     @relation("AgentHostels", fields: [agentId], references: [id])
+  agentId     String
+  bookings    Booking[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  student     User          @relation(fields: [studentId], references: [id])
+  studentId   String
+  hostel      Hostel        @relation(fields: [hostelId], references: [id])
+  hostelId    String
+  amount      Float
+  status      BookingStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model VerificationDocument {
+  id          String             @id @default(uuid())
+  user        User               @relation(fields: [userId], references: [id])
+  userId      String
+  type        DocumentType
+  fileUrl     String
+  status      VerificationStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model OTP {
+  id        String   @id @default(uuid())
+  code      String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  walletId    String
+  amount      Float
+  type        String // CREDIT, DEBIT, ESCROW_HOLD, RELEASE
+  description String?
+  createdAt   DateTime @default(now())
+}
