@@ -18,11 +18,14 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+import path from 'path';
+
 const LOGO_ATTACHMENT = {
     filename: 'logo.png',
-    path: 'c:/Users/HP/Documents/FutaHouseProject/frontend/7778b5de2dff424669d4dfab2e7085c8-removebg-preview.png',
+    path: path.join(__dirname, '../assets/logo.png'),
     cid: 'futa_logo'
 };
+
 
 /**
  * Send a styled OTP email

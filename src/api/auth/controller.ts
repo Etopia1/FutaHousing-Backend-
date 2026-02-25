@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../../models/User';
 import Wallet from '../../models/Wallet';
 import VerificationDocument from '../../models/VerificationDocument';
-import { generateToken } from '../../utils/jwt';
+import { generateToken, generateResetToken, verifyToken } from '../../utils/jwt';
 import { hashPassword, comparePassword } from '../../utils/hash';
 import { generateAndSendOtp, verifyOtpCode } from '../../utils/otpService';
 
@@ -441,3 +441,69 @@ export const updateProfile = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+// ─── Forgot Password ──────────────────────────────────────────────────────────
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ error: 'No account found with this email address.' });
+        }
+
+        await generateAndSendOtp(String(user._id), user.email, 'PASSWORD_RESET', user.name, user.phone);
+
+        res.json({
+            message: 'Password reset code sent to your email and phone',
+            userId: user._id
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ─── Verify Reset OTP ─────────────────────────────────────────────────────────
+export const verifyResetOtp = async (req: Request, res: Response) => {
+    try {
+        const { userId, code } = req.body;
+        const result = await verifyOtpCode(userId, code, 'PASSWORD_RESET');
+        if (!result.valid) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        // Issue a short-lived reset token
+        const resetToken = generateResetToken(userId);
+
+        res.json({
+            message: 'OTP verified! You can now reset your password.',
+            resetToken
+        });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// ─── Reset Password ───────────────────────────────────────────────────────────
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { password, confirmPassword } = req.body;
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) return res.status(401).json({ error: 'Reset token is required' });
+        if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match' });
+
+        const decoded: any = verifyToken(token);
+        if (decoded.purpose !== 'PASSWORD_RESET') {
+            return res.status(401).json({ error: 'Invalid reset token' });
+        }
+
+        const hashedPassword = await hashPassword(password);
+        await User.findByIdAndUpdate(decoded.userId, { password: hashedPassword });
+
+        res.json({ message: 'Password has been reset successfully! You can now log in.' });
+    } catch (err: any) {
+        res.status(401).json({ error: 'Invalid or expired reset token' });
+    }
+};
+

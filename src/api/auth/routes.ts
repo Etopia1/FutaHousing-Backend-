@@ -1,5 +1,9 @@
 import express from 'express';
-import { register, login, verifyEmailOtp, verifyLoginOtp, resendOtp, toggle2FA, getProfile, saveBankDetails, updateProfile } from './controller';
+import {
+    register, login, verifyEmailOtp, verifyLoginOtp, resendOtp,
+    toggle2FA, getProfile, saveBankDetails, updateProfile,
+    forgotPassword, verifyResetOtp, resetPassword
+} from './controller';
 import { authenticate } from '../../middleware/auth';
 
 import multer from 'multer';
@@ -17,6 +21,11 @@ router.post('/login', login);
 router.post('/verify-email', verifyEmailOtp);
 router.post('/verify-login', verifyLoginOtp);
 router.post('/resend-otp', resendOtp);
+
+// Forgot Password flow
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-otp', verifyResetOtp);
+router.post('/reset-password', resetPassword);
 
 // Protected routes
 router.put('/toggle-2fa', authenticate, toggle2FA);
