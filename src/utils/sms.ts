@@ -31,13 +31,14 @@ export const sendSms = async (phone: string, message: string): Promise<boolean> 
             'https://api.ng.termii.com/api/sms/send',
             {
                 to: normalized,
-                from: process.env.TERMII_SENDER_ID || 'N-Alert',
+                from: process.env.TERMII_SENDER_ID || 'Termii',
                 sms: message,
                 type: 'plain',
                 api_key: apiKey,
-                channel: 'generic', // Switched back to generic as it's more standard for N-Alert on many accounts
+                channel: 'dnd', 
             },
             { timeout: 15_000 }
+
         );
 
         const success = response.data?.code === 'ok' || response.status === 200;

@@ -11,12 +11,15 @@ if (!emailPass || emailPass === 'your_gmail_app_password_here') {
 }
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Use STARTTLS
     auth: {
         user: emailUser,
         pass: emailPass,
     },
 });
+
 
 import path from 'path';
 
