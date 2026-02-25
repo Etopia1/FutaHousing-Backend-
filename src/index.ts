@@ -54,19 +54,26 @@ app.get('/', (_req, res) => {
   res.json({ message: '🏠 FUTA Housing API is running', version: '2.0.0' });
 });
 
-server.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+// Export app for Vercel
+export default app;
 
-  // Connect to MongoDB, clean up old indexes, then seed admin after server is up
-  try {
-    await connectDB();
-    await cleanupStaleIndexes();
-    await seedAdmin();
+// Only listen if not running in a serverless environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  server.listen(PORT, async () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 
-    // Initialize Socket.io and log after everything else is ready
-    initSocket(server);
-    console.log('📡 Socket.io system initialized and ready');
-  } catch (err) {
-    console.error('Startup Error:', err);
-  }
-});
+    // Connect to MongoDB, clean up old indexes, then seed admin after server is up
+    try {
+      await connectDB();
+      await cleanupStaleIndexes();
+      await seedAdmin();
+
+      // Initialize Socket.io and log after everything else is ready
+      initSocket(server);
+      console.log('📡 Socket.io system initialized and ready');
+    } catch (err) {
+      console.error('Startup Error:', err);
+    }
+  });
+}
+
